@@ -1,0 +1,261 @@
+[9:58 PM, 7/9/2024] Konan: import math
+import heapq
+
+# Define the Cell class
+class Cell:
+    def _init_(self):
+        self.parent_i = 0 # Parent cell's row index
+        self.parent_j = 0 # Parent cell's column index
+        self.f = float('inf') # Total cost of the cell (g + h)
+        self.g = float('inf') # Cost from start to this cell
+        self.h = 0 # Heuristic cost from this cell to destination
+
+# Define the size of the grid
+ROW = 9
+COL = 10
+
+# Check if a cell is valid (within the grid)
+def is_valid(row, col):
+    return (row >= 0) and (row < ROW) and (col >= 0) and (col < COL)
+
+# Check if a cell is unblocked
+def is_unblocked(grid, row, col):
+    return grid[row][col] == 1
+
+# Check if a cell is the destination
+def is_destination(row, col, dest):
+    return row == dest[0] and col == dest[1]
+
+# Calculate the heuristic value of a cell (Euclidean distance to destination)
+def calculate_h_value(row, col, dest):
+    return ((row - dest[0]) * 2 + (col - dest[1]) * 2) ** 0.5
+
+# Trace the path from source to destination
+def trace_path(cell_details, dest):
+    print("The Path is ")
+    path = []
+    row = dest[0]
+    col = dest[1]
+
+    # Trace the path from destination to source using parent cells
+    while not (cell_details[row][col].parent_i == row and cell_details[row][col].parent_j == col):
+        path.append((row, col))
+        temp_row = cell_details[row][col].parent_i
+        temp_col = cell_details[row][col].parent_j
+        row = temp_row
+        col = temp_col
+
+    # Add the source cell to the path
+    path.append((row, col))
+    # Reverse the path to get the path from source to destination
+    path.reverse()
+
+    # Print the path
+    for i in path:
+        print("->", i, end=" ")
+    print()
+
+# Implement the A* search algorithm
+def a_star_search(grid, src, dest):
+    # Check if the source and destination are valid
+    if not is_valid(src[0], src[1]) or not is_valid(dest[0], dest[1]):
+        print("Source or destination is invalid")
+        return
+
+    # Check if the source and destination are unblocked
+    if not is_unblocked(grid, src[0], src[1]) or not is_unblocked(grid, dest[0], dest[1]):
+        print("Source or the destination is blocked")
+        return
+
+    # Check if we are already at the destination
+    if is_destination(src[0], src[1], dest):
+        print("We are already at the destination")
+        return
+
+    # Initialize the closed list (visited cells)
+    closed_list = [[False for _ in range(COL)] for _ in range(ROW)]
+    # Initialize the details of each cell
+    cell_details = [[Cell() for _ in range(COL)] for _ in range(ROW)]
+
+    # Initialize the start cell details
+    i = src[0]
+    j = src[1]
+    cell_details[i][j].f = 0
+    cell_details[i][j].g = 0
+    cell_details[i][j].h = 0
+    cell_details[i][j].parent_i = i
+    cell_details[i][j].parent_j = j
+
+    # Initialize the open list (cells to be visited) with the start cell
+    open_list = []
+    heapq.heappush(open_list, (0.0, i, j))
+
+    # Initialize the flag for whether destination is found
+    found_dest = False
+
+    # Main loop of A* search algorithm
+    while len(open_list) > 0:
+        # Pop the cell with the smallest f value from the open list
+        p = heapq.heappop(open_list)
+
+        # Mark the cell as visited
+        i = p[1]
+        j = p[2]
+        closed_list[i][j] = True
+
+        # For each direction, check the successors
+        directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+        for dir in directions:
+            new_i = i + dir[0]
+            new_j = j + dir[1]
+
+            # If the successor is valid, unblocked, and not visited
+            if is_valid(new_i, new_j) and is_unblocked(grid, new_i, new_j) and not closed_list[new_i][new_j]:
+                # If the successor is the destination
+                if is_destination(new_i, new_j, dest):
+                    # Set the parent of the destination cell
+                    cell_details[new_i][new_j].parent_i = i
+                    cell_details[new_i][new_j].parent_j = j
+                    print("The destination cell is found")
+                    # Trace and print the path from source to destination
+                    trace_path(cell_details, dest)
+                    found_dest = True
+                    return
+                else:
+                    # Calculate the new f, g, and h values
+                    g_new = cell_details[i][j].g + 1.0
+                    h_new = calculate_h_value(new_i, new_j, dest)
+                    f_new = g_new + h_new
+
+                    # If the cell is not in the open list or the new f value is smaller
+                    if cell_details[new_i][new_j].f == float('inf') or cell_details[new_i][new_j].f > f_new:
+                        # Add the cell to the open list
+                        heapq.heappush(open_list, (f_new, new_i, new_j))
+                        # Update the cell details
+                        cell_details[new_i][new_j].f = f_new
+                        cell_details[new_i][new_j].g = g_new
+                        cell_details[new_i][new_j].h = h_new
+                        cell_details[new_i][new_j].parent_i = i
+                        cell_details[new_i][new_j].parent_j = j
+
+    # If the destination is not found after visiting all cells
+    if not found_dest:
+        print("Failed to find the destination cell")
+
+def main():
+    # Define the grid (1 for unblocked, 0 for blocked)
+    grid = [
+        [1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+        [1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 0, 1, 1, 0, 1, 0, 1],
+        [0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+        [1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+        [1, 0, 1, 1, 1, 1, 0, 1, 0, 0],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+        [1, 1, 1, 0, 0, 0, 1, 0, 0, 1]
+    ]
+
+    # Define the source and destination
+    src = [8, 0]
+    dest = [0, 0]
+
+    # Run the A* search algorithm
+    a_star_search(grid, src, dest)
+
+if _name_ == "_main_":
+    main()
+[9:59 PM, 7/9/2024] Konan: class Graph:
+    def _init_(self, graph, heuristicNodeList, startNode): #instantiate graph object with graph topology, heuristic values, start node
+        self.graph = graph
+        self.H=heuristicNodeList
+        self.start=startNode
+        self.parent={}
+        self.status={}
+        self.solutionGraph={}
+        
+    def applyAOStar(self): # starts a recursive AO* algorithm
+        self.aoStar(self.start, False)
+
+    def getNeighbors(self, v): # gets the Neighbors of a given node
+        return self.graph.get(v,'')
+
+    def getStatus(self,v): # return the status of a given node
+        return self.status.get(v,0)
+
+    def setStatus(self,v, val): # set the status of a given node
+        self.status[v]=val
+
+    def getHeuristicNodeValue(self, n):
+        return self.H.get(n,0) # always return the heuristic value of a given node
+
+    def setHeuristicNodeValue(self, n, value):
+        self.H[n]=value # set the revised heuristic value of a given node
+
+    def printSolution(self):
+        print("FOR GRAPH SOLUTION, TRAVERSE THE GRAPH FROM THE START NODE:",self.start)
+        print("------------------------------------------------------------")
+        print(self.solutionGraph)
+        print("------------------------------------------------------------")
+
+    def computeMinimumCostChildNodes(self, v): # Computes the Minimum Cost of child nodes of a given node v
+        minimumCost=0
+        costToChildNodeListDict={}
+        costToChildNodeListDict[minimumCost]=[]
+        flag=True
+        for nodeInfoTupleList in self.getNeighbors(v): # iterate over all the set of child node/s
+            cost=0
+            nodeList=[]
+            for c, weight in nodeInfoTupleList:
+                cost=cost+self.getHeuristicNodeValue(c)+weight
+                nodeList.append(c)
+            if flag==True: # initialize Minimum Cost with the cost of first set of child node/s
+                minimumCost=cost
+                costToChildNodeListDict[minimumCost]=nodeList # set the Minimum Cost child node/s
+                flag=False
+            else: # checking the Minimum Cost nodes with the current Minimum Cost
+                if minimumCost>cost:
+                    minimumCost=cost
+                    costToChildNodeListDict[minimumCost]=nodeList # set the Minimum Cost child node/s
+        return minimumCost, costToChildNodeListDict[minimumCost] # return Minimum Cost and Minimum Cost child node/s
+
+    def aoStar(self, v, backTracking): # AO* algorithm for a start node and backTracking status flag
+        print("HEURISTIC VALUES :", self.H)
+        print("SOLUTION GRAPH :", self.solutionGraph)
+        print("PROCESSING NODE :", v)
+        print("-----------------------------------------------------------------------------------------")
+        if self.getStatus(v) >= 0: # if status node v >= 0, compute Minimum Cost nodes of v
+            minimumCost, childNodeList = self.computeMinimumCostChildNodes(v)
+            print(minimumCost, childNodeList)
+            self.setHeuristicNodeValue(v, minimumCost)
+            self.setStatus(v,len(childNodeList))
+            solved=True # check the Minimum Cost nodes of v are solved
+            for childNode in childNodeList:
+                self.parent[childNode]=v
+                if self.getStatus(childNode)!=-1:
+                    solved=solved & False
+            if solved==True: # if the Minimum Cost nodes of v are solved, set the current node status as solved(-1)
+                self.setStatus(v,-1)
+                self.solutionGraph[v]=childNodeList # update the solution graph with the solved nodes which may be a part of solution
+            if v!=self.start: # check the current node is the start node for backtracking the current node value
+                self.aoStar(self.parent[v], True) # backtracking the current node value with backtracking status set to true
+            if backTracking==False: # check the current call is not for backtracking 
+                for childNode in childNodeList: # for each Minimum Cost child node
+                    self.setStatus(childNode,0) # set the status of child node to 0(needs exploration)
+                    self.aoStar(childNode, False) # Minimum Cost child node
+                    
+                    
+                    #for simplicity we ll consider heuristic distances given
+print ("Graph - 1")
+h1 = {'A': 1, 'B': 6, 'C': 2, 'D': 12, 'E': 2, 'F': 1, 'G': 5, 'H': 7, 'I': 7, 'J': 1}
+graph1 = {
+    'A': [[('B', 1), ('C', 1)], [('D', 1)]],
+    'B': [[('G', 1)], [('H', 1)]],
+    'C': [[('J', 1)]],
+    'D': [[('E', 1), ('F', 1)]],
+    'G': [[('I', 1)]]
+}
+
+G1= Graph(graph1, h1, 'A')
+G1.applyAOStar()
+G1.printSolution()
