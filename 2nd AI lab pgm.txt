@@ -1,7 +1,7 @@
 from collections import deque
 
 class State:
-    def _init_(self, missionaries_left, cannibals_left, boat, missionaries_right, cannibals_right):
+    def __init__(self, missionaries_left, cannibals_left, boat, missionaries_right, cannibals_right):
         self.missionaries_left = missionaries_left
         self.cannibals_left = cannibals_left
         self.boat = boat
@@ -20,14 +20,14 @@ class State:
             return True
         return False
 
-    def _eq_(self, other):
+    def __eq__(self, other):
         return self.missionaries_left == other.missionaries_left and \
                self.cannibals_left == other.cannibals_left and \
                self.boat == other.boat and \
                self.missionaries_right == other.missionaries_right and \
                self.cannibals_right == other.cannibals_right
 
-    def _hash_(self):
+    def __hash__(self):
         return hash((self.missionaries_left, self.cannibals_left, self.boat, self.missionaries_right, self.cannibals_right))
 
 def successors(current_state):
@@ -110,7 +110,7 @@ def breadth_first_search():
         explored.add(state)
         children = successors(state)
         for child in children:
-            if child not in explored or child not in frontier:
+            if child not in explored and child not in frontier:
                 frontier.append(child)
 
     return None
@@ -124,4 +124,7 @@ def print_solution(solution):
         print(t.missionaries_left, t.cannibals_left, t.boat, t.missionaries_right, t.cannibals_right)
 
 solution = breadth_first_search()
-print_solution(solution)
+if solution:
+    print_solution(solution)
+else:
+    print("No solution found")
